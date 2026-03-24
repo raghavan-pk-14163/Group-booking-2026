@@ -4,7 +4,11 @@
  * All requests require authentication + CSRF token.
  */
 
-const BASE = '/zcal/slotBooking';
+// In production, set VITE_API_BASE to your real backend origin
+// e.g. https://calendar.zoho.com
+// In dev, leave empty — Vite dev server middleware handles /zcal/* routes
+const API_ORIGIN = import.meta.env.VITE_API_BASE || '';
+const BASE = `${API_ORIGIN}/zcal/slotBooking`;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -18,6 +22,16 @@ async function request(url, options = {}) {
     },
     ...options,
   });
+
+  // Guard: if the response is HTML (e.g. SPA fallback), fail gracefully
+  const contentType = res.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    const err = new Error(
+      'API returned non-JSON response. Check that VITE_API_BASE is set to your backend URL.'
+    );
+    err.code = 'NON_JSON_RESPONSE';
+    throw err;
+  }
 
   const data = await res.json();
 
