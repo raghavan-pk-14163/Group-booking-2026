@@ -182,6 +182,7 @@ export default function PublicBookingPage({ bookingId }) {
               <LegendItem color="bg-blue-100 border-blue-200"  label="Available" />
               <LegendItem color="bg-amber-100 border-amber-200" label="Few seats left" />
               <LegendItem color="bg-red-100 border-red-100"   label="Full" />
+              {booking?.waitlistEnabled && <LegendItem color="bg-purple-100 border-purple-200" label="Waitlist" />}
               <LegendItem color="bg-gray-100 border-gray-200" label="Outside window" />
             </div>
           )}
@@ -198,6 +199,7 @@ export default function PublicBookingPage({ bookingId }) {
               weekDates={weekDates}
               capacity={capacity}
               bookingType={booking?.type ?? BOOKING_TYPE.ONE_TO_ONE}
+              waitlistEnabled={booking?.waitlistEnabled ?? false}
               onSelect={(date, slot) => {
                 setSelectedDate(date);
                 setSelectedSlot(slot);

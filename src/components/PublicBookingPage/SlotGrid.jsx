@@ -15,7 +15,7 @@ const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
  *  bookingType — BOOKING_TYPE value
  *  onSelect    — (date, slot) => void — called when a clickable slot is selected
  */
-export default function SlotGrid({ slots, weekDates, capacity, bookingType, onSelect }) {
+export default function SlotGrid({ slots, weekDates, capacity, bookingType, waitlistEnabled = false, onSelect }) {
   const isGroup = bookingType === BOOKING_TYPE.ONE_TO_MANY;
 
   return (
@@ -48,7 +48,8 @@ export default function SlotGrid({ slots, weekDates, capacity, bookingType, onSe
             <div key={colIdx} className="flex flex-col gap-1.5">
               {daySlots.map((slot, rowIdx) => {
                 const { status, seatsLeft } = resolveSlotStatus(slot, capacity);
-                const isClickable = status !== SLOT_STATUS.FULL && status !== SLOT_STATUS.OUTSIDE_WINDOW;
+                const canWaitlist = status === SLOT_STATUS.FULL && waitlistEnabled;
+                const isClickable = canWaitlist || (status !== SLOT_STATUS.FULL && status !== SLOT_STATUS.OUTSIDE_WINDOW);
 
                 return (
                   <SlotButton
@@ -59,6 +60,7 @@ export default function SlotGrid({ slots, weekDates, capacity, bookingType, onSe
                     capacity={capacity}
                     isGroup={isGroup}
                     isClickable={isClickable}
+                    canWaitlist={canWaitlist}
                     onClick={() => isClickable && onSelect(dateKey, slot)}
                   />
                 );
@@ -76,15 +78,17 @@ export default function SlotGrid({ slots, weekDates, capacity, bookingType, onSe
 }
 
 // ─── SlotButton ───────────────────────────────────────────────────────────────
-function SlotButton({ slot, status, seatsLeft, capacity, isGroup, isClickable, onClick }) {
+function SlotButton({ slot, status, seatsLeft, capacity, isGroup, isClickable, canWaitlist, onClick }) {
   const baseStyle = 'w-full rounded-md px-2 py-2 text-center text-xs font-medium transition-all focus:outline-none focus:ring-2 focus:ring-blue-400';
 
-  const statusStyle = {
-    [SLOT_STATUS.AVAILABLE]:      'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 cursor-pointer',
-    [SLOT_STATUS.FEW_SEATS_LEFT]: 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 cursor-pointer',
-    [SLOT_STATUS.FULL]:           'bg-red-50 text-red-400 border border-red-100 cursor-not-allowed opacity-70',
-    [SLOT_STATUS.OUTSIDE_WINDOW]: 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-60',
-  }[status];
+  const statusStyle = canWaitlist
+    ? 'bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 cursor-pointer'
+    : {
+        [SLOT_STATUS.AVAILABLE]:      'bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 cursor-pointer',
+        [SLOT_STATUS.FEW_SEATS_LEFT]: 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 cursor-pointer',
+        [SLOT_STATUS.FULL]:           'bg-red-50 text-red-400 border border-red-100 cursor-not-allowed opacity-70',
+        [SLOT_STATUS.OUTSIDE_WINDOW]: 'bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed opacity-60',
+      }[status];
 
   return (
     <button
@@ -98,7 +102,9 @@ function SlotButton({ slot, status, seatsLeft, capacity, isGroup, isClickable, o
       {isGroup && seatsLeft != null && (
         <div className="mt-0.5">
           {status === SLOT_STATUS.FULL
-            ? <span className="text-red-400">Full</span>
+            ? (canWaitlist
+                ? <span className="text-purple-600">Join waitlist</span>
+                : <span className="text-red-400">Full</span>)
             : status === SLOT_STATUS.FEW_SEATS_LEFT
               ? <span className="text-amber-600">{seatsLeft} left</span>
               : <span className="text-blue-500 opacity-70">{seatsLeft} avail</span>

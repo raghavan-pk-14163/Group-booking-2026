@@ -619,10 +619,10 @@ Each group slot button shows: **time** + **seat count** ("8 avail" / "2 left" / 
 
 ### V1 Scope Adjustments
 
-Based on decisions above, the following are **removed from V1**:
-- ❌ **Waitlist system** — no join-waitlist, no waitlist queue, no promotion (V2)
+Based on decisions above:
+- ✅ **Waitlist system** — re-added to V1; full slots show "Join waitlist" (purple) when enabled
+- ✅ **Approval mode** — included; pending bookings do NOT consume seats
 - ❌ **Partial seat cancellation** — all-or-nothing only (V2)
-- ✅ **Approval mode** — included but pending bookings do NOT consume seats
 
 ---
 
