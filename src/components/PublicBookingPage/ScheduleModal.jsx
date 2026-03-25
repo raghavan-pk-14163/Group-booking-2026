@@ -36,7 +36,8 @@ export default function ScheduleModal({
   // Multi-seat derived values
   const maxSeats              = seatsLeft ?? 1;
   const remainingAfterSelect  = seatsLeft != null ? seatsLeft - seats : null;
-  const seatsExceedAvail      = isGroup && seats > maxSeats;
+  const isWaitlistFlow        = isFull && waitlistEnabled;
+  const seatsExceedAvail      = isGroup && !isWaitlistFlow && seats > maxSeats;
 
   // Plural-aware helpers
   const seatWord   = seats === 1 ? 'Seat' : 'Seats';
@@ -145,11 +146,13 @@ export default function ScheduleModal({
         )}
 
         {step === 'waitlisted' && (
-          <TerminalScreen
-            icon="📋" iconBg="bg-blue-100" iconColor="text-blue-600"
-            title="Added to Waitlist"
-            body={<>Hi <strong>{name}</strong>, this session is currently full. You've been added to the waitlist for <strong>{seatPhrase}</strong> on <strong>{apptDate}</strong>.</>}
-            sub="You'll be notified if seats become available."
+          <WaitlistedScreen
+            name={name}
+            seatPhrase={seatPhrase}
+            apptDate={apptDate}
+            email={email}
+            bookingId={bookingId}
+            selectedSlot={selectedSlot}
             onClose={onClose}
           />
         )}
@@ -429,7 +432,63 @@ function ConfirmedScreen({ name, apptDate, isGroup, seatPhrase, seats, bookingId
   );
 }
 
-// ─── Terminal screens (pending, waitlisted) ──────────────────────────────────
+// ─── Waitlisted screen with cancel option ────────────────────────────────────
+function WaitlistedScreen({ name, seatPhrase, apptDate, email, bookingId, selectedSlot, onClose }) {
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelled, setCancelled]   = useState(false);
+  const [cancelError, setCancelError] = useState(null);
+
+  const handleCancel = async () => {
+    setCancelling(true);
+    setCancelError(null);
+    try {
+      await removeMeFromSlot(bookingId, selectedSlot.eveId, email);
+      setCancelled(true);
+    } catch (err) {
+      setCancelError(resolveError(err));
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  if (cancelled) {
+    return (
+      <div className="flex flex-col items-center justify-center px-8 py-12 text-center gap-4">
+        <div className="h-16 w-16 rounded-full bg-gray-100 flex items-center justify-center text-3xl">✓</div>
+        <h2 className="text-lg font-semibold text-gray-900">Waitlist Cancelled</h2>
+        <p className="text-sm text-gray-500">You've been removed from the waitlist.</p>
+        <button type="button" onClick={onClose}
+          className="mt-2 rounded-md bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
+          Done
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center px-8 py-12 text-center gap-4">
+      <div className="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center text-3xl text-blue-600">📋</div>
+      <h2 className="text-lg font-semibold text-gray-900">Added to Waitlist</h2>
+      <p className="text-sm text-gray-500">
+        Hi <strong>{name}</strong>, this session is currently full. You've been added to the waitlist for <strong>{seatPhrase}</strong> on <strong>{apptDate}</strong>.
+      </p>
+      <p className="text-xs text-gray-400">You'll be notified via email if seats become available.</p>
+      {cancelError && <p className="text-xs text-red-500">{cancelError}</p>}
+      <div className="flex gap-3 mt-2">
+        <button type="button" onClick={handleCancel} disabled={cancelling}
+          className="rounded-md border border-red-200 px-5 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40">
+          {cancelling ? 'Cancelling…' : 'Cancel Waitlist'}
+        </button>
+        <button type="button" onClick={onClose}
+          className="rounded-md bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
+          Done
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Terminal screens (pending) ──────────────────────────────────────────────
 function TerminalScreen({ icon, iconBg, iconColor, title, body, sub, onClose }) {
   return (
     <div className="flex flex-col items-center justify-center px-8 py-12 text-center gap-4">

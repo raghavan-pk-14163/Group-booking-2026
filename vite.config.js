@@ -298,6 +298,15 @@ async function mockHandler(req, res) {
 
   // ── remove-me ─────────────────────────────────────────────────────────────
   if (mode === 'remove-me') {
+    const payload = await readBody(req);
+    // Remove from attendees
+    if (payload.eventId && mockAttendees[payload.eventId]) {
+      mockAttendees[payload.eventId] = mockAttendees[payload.eventId].filter(a => a.email !== payload.email);
+    }
+    // Remove from waitlist
+    if (payload.eventId && mockWaitlist[payload.eventId]) {
+      mockWaitlist[payload.eventId] = mockWaitlist[payload.eventId].filter(w => w.email !== payload.email);
+    }
     return json(res, { status: 'SUCCESS' });
   }
 
